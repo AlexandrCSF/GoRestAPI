@@ -3,27 +3,44 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
 func main() {
-	readAndWriteValue(50)
+	channel := make(chan int)
+	go func(testChan chan int) {
+		for i := 0; i < 10; i++ {
+			testChan <- i
+		}
+		close(testChan)
+	}(channel)
+	for value := range channel {
+		fmt.Println(value)
+	}
 }
 
-func readAndWriteValue(num int) {
-	var wg sync.WaitGroup
-	start := time.Now()
-	wg.Add(num)
-	for i := 0; i < num; i++ {
-		go func(i int) {
-			defer wg.Done()
-			if i%2 == 0 {
-				fmt.Printf("%d - четное\n", i)
-			} else {
-				fmt.Printf("%d - нечетное\n", i)
-			}
-		}(i)
+func readAndWriteValue(num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	buffer := make(chan int)
+	go func(chanForWriting chan<- int) {
+		for i := 0; i < num; i++ {
+			chanForWriting <- i
+		}
+		close(buffer)
+	}(buffer)
+	for value := range buffer {
+		fmt.Println(value)
 	}
-	wg.Wait()
-	fmt.Println(time.Now().Sub(start).Seconds())
+}
+func readAndWriteValue10(num int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	buffer := make(chan int)
+	go func(chanForWriting chan<- int) {
+		for i := 0; i < num; i++ {
+			chanForWriting <- i * 10
+		}
+		close(buffer)
+	}(buffer)
+	for value := range buffer {
+		fmt.Println(value)
+	}
 }
